@@ -1,10 +1,10 @@
-//let num = process.argv[2].toString();
-let num = "-0.00";
+let num = process.argv[2].toString();
+//let num = "-0.00";
 //  /^[-+]?[0-9]*[.,]?[0-9]+(?:[eE][-+]?[0-9]+)?$/
 try
 {
     if(!num.match(/^[-+]?[0-9]+[.][0-9]+$/))
-        throw new TypeError("arg must be number of type: [-+]?[0-9]+[.][0-9]+ ");
+        throw new TypeError("arg must be number type of: [-+]?[0-9]+[.][0-9]+ ");
 } catch (e)
 {
     console.error(e.message);
@@ -40,12 +40,29 @@ switch (integer_part[0]) // определили знак.
 }
 let fractional_part = num[1] === "0" ? new Array(100).fill("0") : fractionToBinary(Number("0."+num[1]), 100);
 let mantissa = [].concat(integer_part).concat(fractional_part);
-let offset = (integer_part.length - mantissa.indexOf('1') - 1 + 127).toString(2).padStart(8, "0").split(""); // todo сделать проверку на все нули.
+//let offset = (integer_part.length - mantissa.indexOf('1') - 1 + 127).toString(2).padStart(8, "0").split(""); // todo сделать проверку на все нули.
 
+let offset = (integer_part.length - mantissa.indexOf('1') - 1 + 127);
+if(offset >= 255)
+{
+    console.log(res[0]+"1".repeat(8)+"0".repeat(23));
+    process.exit(0);
+}
+else if (offset - 127 < -126 )
+{
+    if(offset - 127 < -149)
+    {
+        console.log(res[0] + "0".repeat(8) + "0".repeat(22) + "1");
+        process.exit(0);
+    }
+    console.log(res[0] + "0".repeat(8) + "0".repeat(149 - Math.abs(offset - 127)) + mantissa.join("").substr(mantissa.indexOf("1"), 23 - (149 - Math.abs(offset - 127))).split(""));
+    process.exit(0);
+}
+
+offset = offset.toString(2);
 mantissa = mantissa.join("").substr(mantissa.indexOf("1"), 24).split("");
 mantissa.shift();
 res = res.concat(offset).concat(mantissa);
-//console.log(offset.join(""), mantissa.join(""));
 console.log(res.join(""));
 
 function fractionToBinary(num, accuracy) // todo ноль для этой функции должен быть исключен.
@@ -64,6 +81,3 @@ function fractionToBinary(num, accuracy) // todo ноль для этой фун
     }
     return res;
 }
-
-// 101000111101011100001010
-// 10100011110101110

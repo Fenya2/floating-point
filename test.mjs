@@ -4,7 +4,9 @@ switch (process.argv[2])
 {
     case 'convert':
     {
-        console.log(new Float(process.argv[3], 8, 32).standartForm);
+        let float = new Float(process.argv[3], 8, 32);
+        console.log(float.standartForm);
+        break;
     }
     case 'add':
     {

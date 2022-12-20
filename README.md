@@ -3,5 +3,5 @@
 
 Usage:
 ```
-node IEEE754.js --help
+node IEEE754.mjs --help
 ```

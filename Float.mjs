@@ -22,17 +22,17 @@ export default class Float
             return Object.assign({}, float2);
         if (float2.state === "-INFINITY" && float1.state === "+INFINITY")
             return new Float("NaN", float1.EXPSIZE, float1.STANDARTSIZE);
-        
+
         if(float1.sign === float2.sign)
         {
             let mantissa1 = float1.standartForm.substr(1 + float1.EXPSIZE, float1.MANTISSASIZE);
-            if(float1.state === "+NORMALIZED" || float1.state === "-NORMALIZED")
+            if(float1.state === "NORMALIZED")
                 mantissa1 = "1" + mantissa1;
             else
                 mantissa1 = "0" + mantissa1;
 
             let mantissa2 = float2.standartForm.substr(1 + float2.EXPSIZE, float2.MANTISSASIZE);
-            if(float2.state === "+NORMALIZED" || float2.state === "-NORMALIZED")
+            if(float2.state === "NORMALIZED")
                 mantissa2 = "1" + mantissa2;
             else
                 mantissa2 = "0" + mantissa2;
@@ -42,32 +42,23 @@ export default class Float
             let exp2 = parseInt(float2.standartForm.substr(1, float1.EXPSIZE), 2);
 
             let delta = Math.abs(exp2 - exp1);
-            console.log(exp1, mantissa1);
-            console.log(exp2, mantissa2);
 
             if(exp1 < exp2)
                 mantissa1 = mantissa1.substr(0, float1.MANTISSASIZE+1 - delta).padStart(float1.MANTISSASIZE+1, "0");
             else
                 mantissa2 = mantissa2.substr(0, float2.MANTISSASIZE+1 - delta).padStart(float2.MANTISSASIZE+1, "0");
 
-
-            console.log("delta: ",delta);
-            console.log("exp1:", exp1, "mant1:", mantissa1);
-            console.log("exp1:", exp2, "mant2:", mantissa2);
-
             let resSign = float1.standartForm[0];
             let resExp = Math.max(exp1, exp2);
             let resMantissa = (parseInt(mantissa1, 2) + parseInt(mantissa2, 2)).toString(2);
-            console.log("resMant:",  resMantissa);
             if(resMantissa.length - float1.MANTISSASIZE === 2) // сложение нормализованных с одинаковыми порядками
             {
-                console.log("Попали в это условие.")
                 resMantissa = resMantissa.substr(1, float1.MANTISSASIZE);
                 resExp++;
             }
             else if (resMantissa.length < float1.MANTISSASIZE ) // сложение денормализованных
                 resMantissa = resMantissa.padStart(float1.MANTISSASIZE, "0");
-            else if ( resMantissa.length - float1.MANTISSASIZE === 1 ) // условие выхода из денормализованных чисел
+            else if ( resMantissa.length - float1.MANTISSASIZE === 1 && float1.state === "DENORMALIZED" && float2.state === "DENORMALIZED") // условие выхода из денормализованных чисел
             {
                 resExp++;
                 resMantissa = resMantissa.substr(1, float1.MANTISSASIZE);
@@ -76,14 +67,101 @@ export default class Float
                 resMantissa = resMantissa.substr(1, float1.MANTISSASIZE);
             resExp = resExp.toString(2).padStart(float2.EXPSIZE, "0");
 
-            console.log(resSign+resExp+resMantissa);
             return new Float(resSign+resExp+resMantissa ,float1.EXPSIZE, float1.STANDARTSIZE);
         }
         else
         {
-            console.log("А это уже вычитание");
+            let float2_sign = float2.standartForm[0];
+            if(float2_sign === "1")
+                return this.sub(float1, new Float("0" + float2.standartForm.slice(1), float2.EXPSIZE, float2.STANDARTSIZE));
+            else
+                return this.sub(float2, new Float("0" + float1.standartForm.slice(1), float1.EXPSIZE, float1.STANDARTSIZE));
         }
     }
+
+    static sub(float1, float2) // float1 - float2
+    {
+        if (float1.MANTISSASIZE !== float2.MANTISSASIZE || float1.EXPSIZE !== float2.EXPSIZE)
+            return new Float("", 0, 0);
+        if (float1.state === "NaN" || float2.state === "NaN")
+            return new Float("NaN", float1.EXPSIZE, float1.STANDARTSIZE);
+        if (float1.state === "+INFINITY" && float2.state === "+INFINITY")
+            return new Float("NaN", float1.EXPSIZE, float1.STANDARTSIZE);
+        if (float1.state === "-INFINITY" && float2.state === "-INFINITY")
+            return new Float("NaN", float1.EXPSIZE, float1.STANDARTSIZE);
+        if (float1.state === "+INFINITY" && float2.state === "-INFINITY")
+            return Object.assign({}, float1);
+        if (float1.state === "-INFINITY" && float2.state === "+INFINITY")
+            return Object.assign({}, float1);
+        if (float1.state === "+INFINITY" && float2.state !== "-INFINITY")
+            return Object.assign({}, float1);
+        if (float1.state === "-INFINITY" && float2.state !== "+INFINITY")
+            return Object.assign({}, float1);
+        if (float2.state === "+INFINITY" && float1.state !== "-INFINITY")
+            return Object.assign({}, float2);
+        if (float2.state === "-INFINITY" && float1.state !== "+INFINITY")
+            return Object.assign({}, float2);
+
+        let float1_sign = float1.standartForm[0];
+        let float2_sign = float2.standartForm[0];
+        if(float1_sign === "1" && float2_sign === "0")
+            return this.add(float1, new Float("1"+float2.standartForm.slice(1), float2.EXPSIZE, float2.STANDARTSIZE));
+        else if(float1_sign === "0" && float2_sign === "1")
+            return this.add(float1, new Float("0"+float2.standartForm.slice(1), float2.EXPSIZE, float2.STANDARTSIZE));
+
+        let mantissa1 = float1.standartForm.substr(1 + float1.EXPSIZE, float1.MANTISSASIZE);
+        if(float1.state === "NORMALIZED")
+            mantissa1 = "1" + mantissa1;
+        else
+            mantissa1 = "0" + mantissa1;
+
+        let mantissa2 = float2.standartForm.substr(1 + float2.EXPSIZE, float2.MANTISSASIZE);
+        if(float2.state === "NORMALIZED")
+            mantissa2 = "1" + mantissa2;
+        else
+            mantissa2 = "0" + mantissa2;
+
+        let exp1 = parseInt(float1.standartForm.substr(1, float1.EXPSIZE), 2);
+        let exp2 = parseInt(float2.standartForm.substr(1, float1.EXPSIZE), 2);
+
+        let delta = Math.abs(exp2 - exp1);
+
+        if(exp1 < exp2)
+            mantissa1 = mantissa1.substr(0, float1.MANTISSASIZE+1 - delta).padStart(float1.MANTISSASIZE+1, "0");
+        else
+            mantissa2 = mantissa2.substr(0, float2.MANTISSASIZE+1 - delta).padStart(float2.MANTISSASIZE+1, "0");
+
+        let resExp = Math.max(exp1, exp2);
+        let resMantissa = Math.abs(parseInt(mantissa1, 2) - parseInt(mantissa2, 2));
+        if (resMantissa === 0)
+            return new Float("0.0", float1.EXPSIZE, float1.STANDARTSIZE);
+        resMantissa = resMantissa.toString(2).padStart(float1.MANTISSASIZE, "0");
+        resExp -= resMantissa.indexOf("1");
+        resMantissa = resMantissa.slice(resMantissa.indexOf("1")).padEnd(float1.MANTISSASIZE, "0");
+
+        if(resExp < 0)
+            return new Float("0.0", float1.EXPSIZE, float1.STANDARTSIZE);
+        resMantissa = resMantissa.slice(resMantissa.indexOf("1")+1).padEnd(float1.MANTISSASIZE, "0");
+        resExp = resExp.toString(2).padStart(float1.EXPSIZE, "0");
+
+        let resSign;
+        let float1_module = parseInt(float1.standartForm.slice(1) ,2);
+        let float2_module = parseInt(float2.standartForm.slice(1) ,2);
+
+        if(float1.sign === "-" && float1_module > float2_module)
+            resSign = "1";
+        else if(float1.sign === "-" && float1_module < float2_module)
+            resSign = "0"; // 1100000110100001100110011001101
+        else if(float1.sign === "+" && float1_module > float2_module)
+            resSign = "0";
+        else if(float1.sign === "+" && float1_module < float2_module)
+            resSign = "1";
+
+        return new Float(resSign+resExp+resMantissa ,float1.EXPSIZE, float1.STANDARTSIZE);
+    }
+
+
+
 
 
     constructor (num, expSize, size)
@@ -166,12 +244,10 @@ export default class Float
                 return Number.POSITIVE_INFINITY;
             case "-INFINITY":
                 return Number.NEGATIVE_INFINITY;
-            case "+NORMALIZED":
-            case "-NORMALIZED":
+            case "NORMALIZED":
                 exp = 2**(parseInt(this.standartForm.substr(1, this.EXPSIZE),2) - this.BIAS);
                 return sign*exp*(1+mantissa);
-            case "+DENORMALIZED":
-            case "-DENORMALIZED":
+            case "DENORMALIZED":
                 exp = 2**(parseInt(this.standartForm.substr(1, this.EXPSIZE),2) - this.BIAS + 1);
                 return sign*exp*mantissa;
         }
@@ -222,7 +298,7 @@ export default class Float
             {
                 if(mantissa === "0".repeat(this.MANTISSASIZE))
                     return sign + "ZERO";
-                return sign + "DENORMALIZED";
+                return "DENORMALIZED";
             }
             case "1".repeat(this.EXPSIZE):
             {
@@ -231,7 +307,7 @@ export default class Float
                 return "NaN";
             }
             default:
-                return sign + "NORMALIZED";
+                return "NORMALIZED";
         }
     }
 }

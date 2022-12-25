@@ -135,9 +135,11 @@ export default class Float
         let resMantissa = Math.abs(parseInt(mantissa1, 2) - parseInt(mantissa2, 2));
         if (resMantissa === 0)
             return new Float("0.0", float1.EXPSIZE, float1.STANDARTSIZE);
-        resMantissa = resMantissa.toString(2).padStart(float1.MANTISSASIZE, "0");
-        resExp -= resMantissa.indexOf("1");
-        resMantissa = resMantissa.slice(resMantissa.indexOf("1")).padEnd(float1.MANTISSASIZE, "0");
+        resMantissa = resMantissa.toString(2).padStart(float1.MANTISSASIZE+1, "0");
+        if(delta !== 0)
+            resExp -= resMantissa.indexOf("1");
+        else
+            resExp -= (resMantissa.indexOf("1"))//+2;
 
         if(resExp < 0)
             return new Float("0.0", float1.EXPSIZE, float1.STANDARTSIZE);
@@ -151,7 +153,7 @@ export default class Float
         if(float1.sign === "-" && float1_module > float2_module)
             resSign = "1";
         else if(float1.sign === "-" && float1_module < float2_module)
-            resSign = "0"; // 1100000110100001100110011001101
+            resSign = "0";
         else if(float1.sign === "+" && float1_module > float2_module)
             resSign = "0";
         else if(float1.sign === "+" && float1_module < float2_module)
